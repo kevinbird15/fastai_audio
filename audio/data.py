@@ -272,7 +272,7 @@ class AudioList(ItemList):
             fname = f"{md5(str(p))}-{p.name}.pt"
             image_path = cfg.cache_dir/(f"{folder}/{fname}")
             if cfg.cache and not cfg.force_cache and image_path.exists():
-                mel = torch.load(image_path).squeeze()
+                mel = torch.load(image_path)
                 start, end = None, None
                 if cfg.duration and cfg._processed:
                     mel, start, end = tfm_crop_time(mel, cfg._sr, cfg.duration, cfg.sg_cfg.hop, cfg.pad_mode)
@@ -284,11 +284,11 @@ class AudioList(ItemList):
                                 does not match config sample rate {cfg._sr} 
                                 this means your dataset has multiple different sample rates, 
                                 please choose one and set resample_to to that value''')
-        if(sig.shape[0] > 1):
-            if not cfg.downmix:
-                warnings.warn(f'''Audio file {p} has {sig.shape[0]} channels, automatically downmixing to mono, 
-                                set AudioConfig.downmix=True to remove warnings''')
-            sig = DownmixMono(channels_first=True)(sig)
+#        if(sig.shape[0] > 1):
+#            if not cfg.downmix:
+#                warnings.warn(f'''Audio file {p} has {sig.shape[0]} channels, automatically downmixing to mono, 
+#                                set AudioConfig.downmix=True to remove warnings''')
+#            sig = DownmixMono(channels_first=True)(sig)
         if cfg.max_to_pad or cfg.segment_size:
             pad_len = cfg.max_to_pad if cfg.max_to_pad is not None else cfg.segment_size
             sig = tfm_padtrim_signal(sig, int(pad_len/1000*sr), pad_mode="zeros")
@@ -299,10 +299,10 @@ class AudioList(ItemList):
             else:
                 mel = MelSpectrogram(**(cfg.sg_cfg.mel_args()))(sig)
                 if cfg.sg_cfg.to_db_scale: mel = SpectrogramToDB(top_db=cfg.sg_cfg.top_db)(mel)
-            mel = mel.squeeze().permute(1, 0).flip(0)
+            mel = mel.unsqueeze(1).permute(0,1,3,2).flip(2)
             if cfg.standardize: mel = standardize(mel)
             if cfg.delta: mel = torch.stack([mel, torchdelta(mel), torchdelta(mel, order=2)]) 
-            else: mel = mel.expand(3,-1,-1)
+            #else: mel = mel.expand(3,-1,-1)
             if cfg.cache:
                 os.makedirs(image_path.parent, exist_ok=True)
                 torch.save(mel, image_path)

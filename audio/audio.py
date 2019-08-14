@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import warnings
 from pathlib import Path, PosixPath
-
+import pdb
 
 AUDIO_EXTENSIONS = tuple(str.lower(k) for k, v in mimetypes.types_map.items() if v.startswith('audio/'))
 
@@ -18,17 +18,17 @@ class AudioItem(ItemBase):
         if isinstance(sig, np.ndarray): sig = torch.from_numpy(sig)
         if sig is not None:
             if(len(sig.shape) == 1): sig = sig.unsqueeze(0)
-            if(sig is not None and len(sig.shape) > 1 and sig.shape[0] > 1):
-                warnings.warn(f'''Audio file {path} has {sig.shape[0]} channels, automatically downmixing to mono''')
-                sig = DownmixMono(channels_first=True)(sig)
+#            if(sig is not None and len(sig.shape) > 1 and sig.shape[0] > 1):
+#                warnings.warn(f'''Audio file {path} has {sig.shape[0]} channels, automatically downmixing to mono''')
+#                sig = DownmixMono(channels_first=True)(sig)
         self._sig, self._sr, self.path, self.spectro = sig, sr, path, spectro
         self.max_to_pad = max_to_pad
         self.start, self.end = start, end
 
     def __str__(self):
-        return f'{self.__class__.__name__} {round(self.duration, 2)} seconds ({self.sig.shape[0]} samples @ {self.sr}hz)'
+        return f'{self.__class__.__name__} {round(self.duration, 2)} seconds ({self.sig.shape[-1]} samples @ {self.sr}hz)'
 
-    def __len__(self): return self.data.shape[0]
+    def __len__(self): return self.data.shape
     
     def _repr_html_(self):
         return f'{self.__str__()}<br />{self.ipy_audio._repr_html_()}'
@@ -55,10 +55,10 @@ class AudioItem(ItemBase):
     def get_spec_images(self):
         sg = self.spectro
         if sg is None: return [] 
-        if torch.all(torch.eq(sg[0], sg[1])) and torch.all(torch.eq(sg[0], sg[2])):
-            return [Image(sg[0].unsqueeze(0))]
+        #if torch.all(torch.eq(sg[0], sg[1])) and torch.all(torch.eq(sg[0], sg[2])):
+        #    return [Image(sg[0].unsqueeze(0))]
         else: 
-            return [Image(s.unsqueeze(0)) for s in sg]
+            return [Image(s) for s in sg]
 
     def hear(self, title=None):
         if title is not None: print("Label:", title)
@@ -90,7 +90,7 @@ class AudioItem(ItemBase):
     def sig(self):
         if not hasattr(self, '_sig') or self._sig is None:
             self._reload_signal()
-        return self._sig.squeeze(0)
+        return self._sig#.squeeze(0)
     
     @sig.setter
     def sig(self, sig): self._sig = sig
@@ -110,7 +110,7 @@ class AudioItem(ItemBase):
 
     @property
     def duration(self): 
-        if(self._sig is not None): return len(self.sig)/self.sr
+        if(self._sig is not None): return self.sig.shape[-1]/self.sr
         else: 
             si, ei = torchaudio.info(str(self.path))
             return si.length/si.rate
