@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import warnings
 from pathlib import Path, PosixPath
-import pdb
+
 
 AUDIO_EXTENSIONS = tuple(str.lower(k) for k, v in mimetypes.types_map.items() if v.startswith('audio/'))
 
@@ -18,9 +18,7 @@ class AudioItem(ItemBase):
         if isinstance(sig, np.ndarray): sig = torch.from_numpy(sig)
         if sig is not None:
             if(len(sig.shape) == 1): sig = sig.unsqueeze(0)
-#            if(sig is not None and len(sig.shape) > 1 and sig.shape[0] > 1):
-#                warnings.warn(f'''Audio file {path} has {sig.shape[0]} channels, automatically downmixing to mono''')
-#                sig = DownmixMono(channels_first=True)(sig)
+
         self._sig, self._sr, self.path, self.spectro = sig, sr, path, spectro
         self.max_to_pad = max_to_pad
         self.start, self.end = start, end
@@ -54,9 +52,8 @@ class AudioItem(ItemBase):
                          
     def get_spec_images(self):
         sg = self.spectro
-        if sg is None: return [] 
-        #if torch.all(torch.eq(sg[0], sg[1])) and torch.all(torch.eq(sg[0], sg[2])):
-        #    return [Image(sg[0].unsqueeze(0))]
+        if sg is None: 
+            return [] 
         else: 
             return [Image(s) for s in sg]
 
@@ -90,7 +87,7 @@ class AudioItem(ItemBase):
     def sig(self):
         if not hasattr(self, '_sig') or self._sig is None:
             self._reload_signal()
-        return self._sig#.squeeze(0)
+        return self._sig
     
     @sig.setter
     def sig(self, sig): self._sig = sig

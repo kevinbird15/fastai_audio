@@ -284,11 +284,6 @@ class AudioList(ItemList):
                                 does not match config sample rate {cfg._sr} 
                                 this means your dataset has multiple different sample rates, 
                                 please choose one and set resample_to to that value''')
-#        if(sig.shape[0] > 1):
-#            if not cfg.downmix:
-#                warnings.warn(f'''Audio file {p} has {sig.shape[0]} channels, automatically downmixing to mono, 
-#                                set AudioConfig.downmix=True to remove warnings''')
-#            sig = DownmixMono(channels_first=True)(sig)
         if cfg.max_to_pad or cfg.segment_size:
             pad_len = cfg.max_to_pad if cfg.max_to_pad is not None else cfg.segment_size
             sig = tfm_padtrim_signal(sig, int(pad_len/1000*sr), pad_mode="zeros")
