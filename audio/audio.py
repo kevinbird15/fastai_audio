@@ -1,7 +1,6 @@
 from IPython.display import Audio
 import mimetypes
 import torchaudio
-from torchaudio.transforms import PadTrim, DownmixMono
 from fastai.data_block import ItemBase
 from fastai.vision import Image
 import numpy as np
@@ -58,7 +57,7 @@ class AudioItem(ItemBase):
         #if torch.all(torch.eq(sg[0], sg[1])) and torch.all(torch.eq(sg[0], sg[2])):
         #    return [Image(sg[0].unsqueeze(0))]
         else: 
-            return [Image(s) for s in sg]
+            return [Image(s.unsqueeze(0)) for s in sg]
 
     def hear(self, title=None):
         if title is not None: print("Label:", title)

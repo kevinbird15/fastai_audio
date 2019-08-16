@@ -11,7 +11,7 @@ from fastai.vision import *
 from fastprogress import progress_bar
 import torchaudio
 import warnings
-from torchaudio.transforms import MelSpectrogram, SpectrogramToDB, MFCC
+from torchaudio.transforms import MelSpectrogram, AmplitudeToDB, MFCC
 
 
 def md5(s):
@@ -28,19 +28,18 @@ class AudioDataBunch(DataBunch):
 @dataclass
 class SpectrogramConfig:
     '''Configuration for how Spectrograms are generated'''
-    f_min: int = 0
+    f_min: float = 0.0
     f_max: int = 22050
-    hop: int = 256
+    hop_length: int = 256
     n_fft: int = 2560
     n_mels: int = 128
     pad: int = 0
     to_db_scale: bool = True
     top_db: int = 100
-    ws: int = None
     n_mfcc: int = 20
     def mel_args(self):
         return {k:v for k, v in asdict(self).items() if k in ["f_min", "f_max", "hop", "n_fft", 
-                                                      "n_mels", "pad", "ws"]}
+                                                      "n_mels", "pad"]}
         
 @dataclass
 class AudioConfig:
@@ -298,8 +297,9 @@ class AudioList(ItemList):
             if cfg.mfcc: mel = MFCC(sr=sr, n_mfcc=cfg.sg_cfg.n_mfcc, melkwargs=cfg.sg_cfg.mel_args())(sig)
             else:
                 mel = MelSpectrogram(**(cfg.sg_cfg.mel_args()))(sig)
-                if cfg.sg_cfg.to_db_scale: mel = SpectrogramToDB(top_db=cfg.sg_cfg.top_db)(mel)
-            mel = mel.unsqueeze(1).permute(0,1,3,2).flip(2)
+                mel = mel.detach()
+                if cfg.sg_cfg.to_db_scale: mel = AmplitudeToDB(top_db=cfg.sg_cfg.top_db)(mel)
+            mel = mel.permute(0,1,2).flip(1)
             if cfg.standardize: mel = standardize(mel)
             if cfg.delta: mel = torch.stack([mel, torchdelta(mel), torchdelta(mel, order=2)]) 
             #else: mel = mel.expand(3,-1,-1)
